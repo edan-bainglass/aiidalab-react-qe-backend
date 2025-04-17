@@ -1,0 +1,12 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "aiidalab-react-qe-backend"
+version = "0.1.0"
+description = "FastAPI backend for AiiDAlab React QE app"
+dependencies = ["fastapi", "uvicorn[standard]", "pydantic>=2.0"]
+
+[project.entry-points."aiidalab_qe.plugins"]
+bands = "aiidalab_react_qe_backend.plugins.bands:get_plugin"
