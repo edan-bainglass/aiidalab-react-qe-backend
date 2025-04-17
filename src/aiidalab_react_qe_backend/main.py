@@ -12,12 +12,12 @@ def list_plugins():
     return [{"id": p["id"], "label": p["label"]} for p in discover_plugins()]
 
 
-@app.get("/api/plugins/{plugin_id}/schemas")
-def get_plugin_schema(plugin_id: str):
+@app.get("/api/plugins/{plugin_id}/{schema}")
+def get_plugin_schema(plugin_id: str, schema: str):
     """
     Return the schema definitions for a specific plugin.
     """
     for plugin in discover_plugins():
         if plugin["id"] == plugin_id:
-            return plugin["schemas"]
+            return plugin.get(schema, {})
     raise HTTPException(status_code=404, detail=f"Plugin '{plugin_id}' not found")
