@@ -10,21 +10,21 @@ class Test2Input(pdt.BaseModel):
     some_string: t.Annotated[
         str,
         pdt.Field(
-            title="Some string",
+            title="Text",
             default="Hello world",
         ),
     ]
     some_email: t.Annotated[
         pdt.EmailStr,
         pdt.Field(
-            title="Some email",
+            title="Email",
             default="my.email@fakemail.com",
         ),
     ]
     some_boolean: t.Annotated[
         pdt.StrictBool,
         pdt.Field(
-            title="Some bool",
+            title="Bool",
             default=True,
         ),
     ]
@@ -43,6 +43,8 @@ def get_plugin() -> dict[str, t.Any]:
                 "some_email": {
                     "ui:placeholder": "username@domain.com",
                 },
+                "ui:options": {"title": False},
+                "ui:submitButtonOptions": {"norender": True},
             },
         },
     }

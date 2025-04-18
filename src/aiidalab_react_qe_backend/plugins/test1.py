@@ -10,7 +10,7 @@ class Test1Input(pdt.BaseModel):
     some_float: t.Annotated[
         float,
         pdt.Field(
-            title="Some float (in some units)",
+            title="Float (in some units)",
             default=0.5,
             ge=0,
             le=1,
@@ -20,7 +20,7 @@ class Test1Input(pdt.BaseModel):
     some_integer: t.Annotated[
         int,
         pdt.Field(
-            title="Some even integer (in some other units)",
+            title="Even integer (in some other units)",
             default=2,
             gt=0,
             le=10,
@@ -35,6 +35,9 @@ def get_plugin() -> dict[str, t.Any]:
         "label": "First test plugin",
         "input": {
             "schema": Test1Input.model_json_schema(),
-            "ui": {},
+            "ui": {
+                "ui:options": {"title": False},
+                "ui:submitButtonOptions": {"norender": True},
+            },
         },
     }
