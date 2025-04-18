@@ -34,5 +34,15 @@ def get_plugin() -> dict[str, t.Any]:
     return {
         "id": "test2",
         "label": "Second test plugin",
-        "input": Test2Input.model_json_schema(),
+        "input": {
+            "schema": Test2Input.model_json_schema(),
+            "ui": {
+                "some_string": {
+                    "ui:placeholder": "Enter some text",
+                },
+                "some_email": {
+                    "ui:placeholder": "username@domain.com",
+                },
+            },
+        },
     }
