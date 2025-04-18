@@ -32,7 +32,7 @@ class Test1Input(pdt.BaseModel):
 def get_plugin() -> dict[str, t.Any]:
     return {
         "id": "test1",
-        "label": "First test plugin",
+        "label": "First property",
         "input": {
             "schema": Test1Input.model_json_schema(),
             "ui": {
