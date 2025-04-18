@@ -1,3 +1,4 @@
+import datetime
 import typing as t
 
 import pydantic as pdt
@@ -28,6 +29,13 @@ class Test2Input(pdt.BaseModel):
             default=True,
         ),
     ]
+    some_date: t.Annotated[
+        datetime.datetime,
+        pdt.Field(
+            title="Date",
+            default=datetime.date.today(),
+        ),
+    ]
 
 
 def get_plugin() -> dict[str, t.Any]:
@@ -44,7 +52,6 @@ def get_plugin() -> dict[str, t.Any]:
                     "ui:placeholder": "username@domain.com",
                 },
                 "ui:options": {"title": False},
-                "ui:submitButtonOptions": {"norender": True},
             },
         },
     }
