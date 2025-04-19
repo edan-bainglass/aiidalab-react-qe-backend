@@ -1,4 +1,7 @@
+from pprint import pprint
+
 from fastapi import FastAPI, HTTPException
+
 from aiidalab_react_qe_backend.registry import discover_plugins
 
 app = FastAPI()
@@ -21,3 +24,14 @@ def get_plugin_schema(plugin_id: str, schema: str):
         if plugin["id"] == plugin_id:
             return plugin.get(schema, {})
     raise HTTPException(status_code=404, detail=f"Plugin '{plugin_id}' not found")
+
+
+@app.post("/api/submit")
+def submit_workflow(payload: dict):
+    """
+    Submit a workflow to the backend.
+    """
+    # Here you would implement the logic to submit the workflow
+    # For now, we just return the payload for demonstration purposes
+    pprint(payload)
+    return {"status": "success", "data": payload}
