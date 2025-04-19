@@ -30,7 +30,7 @@ class Test2Input(pdt.BaseModel):
         ),
     ]
     some_date: t.Annotated[
-        datetime.datetime,
+        datetime.date,
         pdt.Field(
             title="Date",
             default=datetime.date.today(),
