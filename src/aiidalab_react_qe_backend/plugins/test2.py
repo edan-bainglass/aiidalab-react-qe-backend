@@ -51,7 +51,6 @@ def get_plugin() -> dict[str, t.Any]:
                 "some_email": {
                     "ui:placeholder": "username@domain.com",
                 },
-                "ui:options": {"title": False},
             },
         },
     }

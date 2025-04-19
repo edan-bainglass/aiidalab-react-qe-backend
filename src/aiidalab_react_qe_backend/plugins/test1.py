@@ -36,7 +36,6 @@ def get_plugin() -> dict[str, t.Any]:
         "input": {
             "schema": Test1Input.model_json_schema(),
             "ui": {
-                "ui:options": {"title": False},
                 "some_integer": {
                     "ui:dependency": {
                         "parameter": "structure",
