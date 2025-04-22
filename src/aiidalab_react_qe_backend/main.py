@@ -1,4 +1,4 @@
-from pprint import pprint
+import json
 
 from fastapi import FastAPI, HTTPException
 
@@ -33,5 +33,5 @@ def submit_workflow(payload: dict):
     """
     # Here you would implement the logic to submit the workflow
     # For now, we just return the payload for demonstration purposes
-    pprint(payload)
+    print(json.dumps(payload, indent=2))
     return {"status": "success", "data": payload}
