@@ -35,37 +35,11 @@ def get_plugin() -> dict[str, t.Any]:
         "label": "First property",
         "input": {
             "schema": Test1Input.model_json_schema(),
-            "ui": {
-                "some_integer": {
-                    "ui:dependency": {
-                        "parameter": "structure",
-                        "relationship": "<= {{parameter}}.nsites",
-                    }
-                },
-            },
+            "ui": {},
         },
         "resources": {},
         "output": {
             "schema": {},
-            "ui": {
-                "bands_data": {
-                    "ui:widget": "BandsDataWidget",
-                    "ui:options": {
-                        "layout": {
-                            "show_title": True,
-                            "show_description": True,
-                            "show_plot": True,
-                            "show_table": False,
-                        },
-                        "config": {
-                            "title": "Band structure",
-                            "description": "Band structure of the system",
-                            "plot_type": "band_structure",
-                            "show_plot": True,
-                            "show_table": False,
-                        },
-                    },
-                }
-            },
+            "ui": {},
         },
     }
