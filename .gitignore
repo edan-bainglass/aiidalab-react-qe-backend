@@ -103,3 +103,6 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# User files
+test.ipynb
