@@ -7,7 +7,3 @@ name = "aiidalab-react-qe-backend"
 version = "0.1.0"
 description = "FastAPI backend for AiiDAlab React QE app"
 dependencies = ["fastapi", "uvicorn[standard]", "pydantic>=2.0"]
-
-[project.entry-points."aiidalab_qe.plugins"]
-test1 = "aiidalab_react_qe_backend.plugins.test1:get_plugin"
-test2 = "aiidalab_react_qe_backend.plugins.test2:get_plugin"
