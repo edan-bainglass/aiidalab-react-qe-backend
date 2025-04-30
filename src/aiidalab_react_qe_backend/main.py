@@ -4,6 +4,8 @@ from fastapi import FastAPI, HTTPException
 
 from aiidalab_react_qe_backend.registry import discover_plugins
 
+from .models.input import SCHEMA as INPUT_SCHEMA
+
 app = FastAPI()
 
 
@@ -20,7 +22,13 @@ def list_plugins():
     return plugins
 
 
-@app.get("/api/plugins/{plugin_id}/{schema_key}")
+@app.get("/api/core/schemas/input")
+def get_core_input_schema():
+    print(json.dumps(INPUT_SCHEMA, indent=2))
+    return INPUT_SCHEMA
+
+
+@app.get("/api/plugin/schemas/{plugin_id}/{schema_key}")
 def get_plugin_schema(plugin_id: str, schema_key: str):
     for plugin in discover_plugins():
         if plugin["id"] == plugin_id:
