@@ -36,7 +36,7 @@ class ConvergenceSettings(CustomBaseModel):
     __conditionals__ = [
         if_("protocol")
         .is_equal("fast")
-        .then(
+        .then_(
             patches=[
                 Patch("scfConvEng").set_default(4e-10),
                 Patch("ionicConvEng").set_default(1e-4),
@@ -46,7 +46,7 @@ class ConvergenceSettings(CustomBaseModel):
         .else_(
             condition=if_("protocol")
             .is_equal("balanced")
-            .then(
+            .then_(
                 patches=[
                     Patch("scfConvEng").set_default(2e-10),
                     Patch("ionicConvEng").set_default(1e-5),

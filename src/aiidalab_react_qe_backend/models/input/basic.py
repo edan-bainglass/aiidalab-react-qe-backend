@@ -74,7 +74,7 @@ class BasicSettings(CustomBaseModel):
     __conditionals__ = [
         if_("molecule")
         .is_true()
-        .then(
+        .then_(
             patches=[
                 Patch("relax")
                 .set_options(["none", "positions"])

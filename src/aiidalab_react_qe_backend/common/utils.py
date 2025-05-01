@@ -56,23 +56,25 @@ class Condition:
         self._if = {"properties": {self.field: {"const": value}}}
         return self
 
-    def then(
+    def then_(
         self,
         schema: dict | None = None,
+        properties: list[str] | None = None,
         patches: list[Patch] | None = None,
         condition: t.Optional["Condition"] = None,
     ) -> "Condition":
-        self._then = schema or patches or condition
+        self._then = schema or properties or patches or condition
         assert self._then is not None, "missing 'then' condition"
         return self
 
     def else_(
         self,
         schema: dict | None = None,
+        properties: list[str] | None = None,
         patches: list[Patch] | None = None,
         condition: t.Optional["Condition"] = None,
     ) -> "Condition":
-        self._else = schema or patches or condition
+        self._else = schema or properties or patches or condition
         assert self._else is not None, "missing 'else' condition"
         return self
 
@@ -100,6 +102,12 @@ class Condition:
                         prop: value
                         for entry in obj
                         for prop, value in entry.to_dict()["properties"].items()
+                    }
+                }
+            elif all(isinstance(entry, str) for entry in obj):
+                return {
+                    "properties": {
+                        prop: {"$ref": f"#/definitions/{prop}"} for prop in obj
                     }
                 }
         if isinstance(obj, Condition):
