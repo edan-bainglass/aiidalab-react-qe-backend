@@ -1,10 +1,10 @@
 import json
 
+from aiidalab_react_qe_backend.models.input.advanced import ADVANCED_SETTINGS
+from aiidalab_react_qe_backend.models.input.basic import BasicSettings
 from fastapi import FastAPI, HTTPException
 
 from aiidalab_react_qe_backend.registry import discover_plugins
-
-from .models.input import SCHEMA as INPUT_SCHEMA
 
 app = FastAPI()
 
@@ -24,8 +24,15 @@ def list_plugins():
 
 @app.get("/api/core/schemas/input")
 def get_core_input_schema():
-    print(json.dumps(INPUT_SCHEMA, indent=2))
-    return INPUT_SCHEMA
+    input_schema = {
+        "basic": BasicSettings.model_full_schema(),
+        "advanced": {
+            category: schema.model_full_schema()
+            for category, schema in ADVANCED_SETTINGS.items()
+        },
+    }
+    print(json.dumps(input_schema, indent=2))
+    return input_schema
 
 
 @app.get("/api/plugin/schemas/{plugin_id}/{schema_key}")
