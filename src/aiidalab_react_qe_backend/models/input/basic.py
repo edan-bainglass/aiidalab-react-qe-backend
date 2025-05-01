@@ -15,11 +15,7 @@ class BasicSettings(CustomBaseModel):
     model_config = pdt.ConfigDict(title="")
 
     relax: t.Annotated[
-        t.Literal[
-            "none",
-            "positions",
-            "positions-cell",
-        ],
+        t.Optional[str],
         pdt.Field(title="Relaxation level"),
         WithWidget("toggleGroup"),
         WithLabels(
@@ -29,7 +25,7 @@ class BasicSettings(CustomBaseModel):
                 "Full geometry",
             ],
         ),
-    ] = "positions-cell"
+    ] = None
     electronic_type: t.Annotated[
         t.Literal[
             "metallic",
