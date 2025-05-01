@@ -69,12 +69,6 @@ class BasicSettings(CustomBaseModel):
         pdt.Field(title="Spin-orbit coupling"),
     ] = False
 
-    __with_ui__ = {
-        "ui:submitButtonOptions": {
-            "norender": True,
-        }
-    }
-
     __dependencies__ = ["structure.pbc"]
 
     __conditionals__ = [

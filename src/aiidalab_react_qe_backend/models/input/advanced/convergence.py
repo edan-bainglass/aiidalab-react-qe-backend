@@ -31,12 +31,6 @@ class ConvergenceSettings(CustomBaseModel):
         ),
     ]
 
-    __with_ui__ = {
-        "ui:submitButtonOptions": {
-            "norender": True,
-        }
-    }
-
     __dependencies__ = ["basic.protocol"]
 
     __conditionals__ = [

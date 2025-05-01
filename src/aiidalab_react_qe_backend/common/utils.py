@@ -139,7 +139,11 @@ class CustomBaseModel(pdt.BaseModel):
 
     @classmethod
     def model_ui_schema(cls) -> dict:
-        ui_schema = {}
+        ui_schema = {
+            "ui:submitButtonOptions": {
+                "norender": True,
+            }
+        }
 
         if cls.__with_ui__:
             ui_schema["ui:options"] = cls.__with_ui__
