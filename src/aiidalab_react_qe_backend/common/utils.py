@@ -111,6 +111,9 @@ def if_(field: str) -> Condition:
     return Condition(field)
 
 
+IsConditional = type("_IsConditional", (), {})()
+
+
 class CustomBaseModel(pdt.BaseModel):
     __with_ui__: dict[str, t.Any] = {}  # schema-level UI options
     __dependencies__: list[str] = []
@@ -121,12 +124,20 @@ class CustomBaseModel(pdt.BaseModel):
         defs: dict[str, t.Any] = schema.setdefault("definitions", {})
         properties: dict[str, t.Any] = schema.get("properties", {})
 
-        updated_props = {}
-        for prop_name, prop_schema in properties.items():
-            defs[prop_name] = prop_schema
-            updated_props[prop_name] = {"$ref": f"#/definitions/{prop_name}"}
+        conditional_fields = {
+            field_name
+            for field_name, field in cls.model_fields.items()
+            if any(meta is IsConditional for meta in field.metadata)
+        }
 
-        schema["properties"] = updated_props
+        updated_fields = {}
+        for field_name, field_schema in properties.items():
+            defs[field_name] = field_schema
+            if field_name in conditional_fields:
+                continue
+            updated_fields[field_name] = {"$ref": f"#/definitions/{field_name}"}
+
+        schema["properties"] = updated_fields
 
         conditionals: list[Condition] | None = getattr(cls, "__conditionals__", None)
         if conditionals:
