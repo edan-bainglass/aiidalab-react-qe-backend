@@ -19,15 +19,15 @@ class WithWidget:
 
 class Patch:
     def __init__(self, field: str):
-        self._field = field
+        self.field = field
         self._properties: dict[str, dict] = {}
 
     def set_options(self, options: list[str]) -> "Patch":
-        self._properties.setdefault(self._field, {})["enum"] = options
+        self._properties.setdefault(self.field, {})["enum"] = options
         return self
 
     def set_default(self, default: t.Any) -> "Patch":
-        self._properties.setdefault(self._field, {})["default"] = default
+        self._properties.setdefault(self.field, {})["default"] = default
         return self
 
     def to_dict(self) -> dict:
@@ -41,8 +41,8 @@ class Condition:
     ):
         self.field = field
         self._if: dict = {}
-        self._then: dict | Patch | Condition | None = None
-        self._else: dict | Patch | Condition | None = None
+        self._then: dict | list[Patch] | Condition | None = None
+        self._else: dict | list[Patch] | Condition | None = None
 
     def is_true(self) -> "Condition":
         self._if = {"properties": {self.field: {"const": True}}}
@@ -59,20 +59,20 @@ class Condition:
     def then(
         self,
         schema: dict | None = None,
-        patch: Patch | None = None,
+        patches: list[Patch] | None = None,
         condition: t.Optional["Condition"] = None,
     ) -> "Condition":
-        self._then = schema or patch or condition
+        self._then = schema or patches or condition
         assert self._then is not None, "missing 'then' condition"
         return self
 
     def else_(
         self,
         schema: dict | None = None,
-        patch: Patch | None = None,
+        patches: list[Patch] | None = None,
         condition: t.Optional["Condition"] = None,
     ) -> "Condition":
-        self._else = schema or patch or condition
+        self._else = schema or patches or condition
         assert self._else is not None, "missing 'else' condition"
         return self
 
@@ -89,9 +89,19 @@ class Condition:
             ),
         }
 
-    def _convert(self, obj):
-        if isinstance(obj, Patch):
-            return obj.to_dict()
+    def _convert(
+        self,
+        obj: dict | list[Patch] | t.Optional["Condition"],
+    ) -> dict | list[Patch] | t.Optional["Condition"]:
+        if isinstance(obj, list):
+            if all(isinstance(entry, Patch) for entry in obj):
+                return {
+                    "properties": {
+                        prop: value
+                        for entry in obj
+                        for prop, value in entry.to_dict()["properties"].items()
+                    }
+                }
         if isinstance(obj, Condition):
             return obj.to_json()
         return obj
