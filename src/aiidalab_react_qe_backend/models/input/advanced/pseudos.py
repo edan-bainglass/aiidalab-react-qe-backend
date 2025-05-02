@@ -5,7 +5,7 @@ import pydantic as pdt
 from aiidalab_react_qe_backend.common.utils import (
     CustomBaseModel,
     Patch,
-    WithItemFormat,
+    WithItems,
     WithLabels,
     WithUI,
     WithWidget,
@@ -57,7 +57,7 @@ class PseudopotentialSettings(CustomBaseModel):
         pdt.Field(
             title="Pseudopotentials",
         ),
-        WithItemFormat("data-url"),
+        WithItems(format="data-url"),
         WithUI(
             schema={
                 "ui:options": {"classNames": "mt-2"},

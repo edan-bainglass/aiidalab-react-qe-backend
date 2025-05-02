@@ -18,9 +18,9 @@ class WithWidget:
         self.widget = widget
 
 
-class WithItemFormat:
-    def __init__(self, format: str):
-        self.format = format
+class WithItems:
+    def __init__(self, **item_schema: t.Any):
+        self.item_schema = item_schema
 
 
 class Patch:
@@ -155,8 +155,8 @@ class CustomBaseModel(pdt.BaseModel):
             model_field = cls.model_fields[name]
 
             for meta in model_field.metadata:
-                if isinstance(meta, WithItemFormat):
-                    field_schema.setdefault("items", {})["format"] = meta.format
+                if isinstance(meta, WithItems):
+                    field_schema.setdefault("items", {}).update(meta.item_schema)
 
             defs[name] = field_schema
 
