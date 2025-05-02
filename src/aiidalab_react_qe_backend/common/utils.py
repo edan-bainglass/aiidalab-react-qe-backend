@@ -91,8 +91,9 @@ class Schema:
 
 
 class Condition:
-    def __init__(self, field: str):
+    def __init__(self, field: str, condition_only: bool = False):
         self.field = field
+        self._condition_only = condition_only
         self._if: dict = {}
         self._then: dict | None = None
         self._else: dict | None = None
@@ -120,6 +121,8 @@ class Condition:
         return self
 
     def to_json(self) -> dict:
+        if self._condition_only:
+            return self._if["properties"]
         return {
             "if": self._if,
             "then": self._then,
@@ -131,12 +134,18 @@ def if_(field: str) -> Condition:
     return Condition(field)
 
 
+def requires(field: str) -> Condition:
+    return Condition(field, condition_only=True)
+
+
 IsConditional = type("_IsConditional", (), {})()
 
 
 class CustomBaseModel(pdt.BaseModel):
-    __with_ui__: dict[str, t.Any] = {}
-    __dependencies__: list[str] = []
+    __with_ui__: dict[str, t.Any] | None = None
+    __requires__: Condition | None = None
+    __dependencies__: list[str] | None = None
+    __conditionals__: list[Condition] | None = None
 
     @classmethod
     def model_json_schema(cls, *args, **kwargs):
@@ -163,7 +172,10 @@ class CustomBaseModel(pdt.BaseModel):
             if name not in conditional_fields:
                 updated_props[name] = {"$ref": f"#/definitions/{name}"}
 
-        schema["properties"] = updated_props
+        if updated_props:
+            schema["properties"] = updated_props
+        else:
+            del schema["properties"]
 
         conditionals: list[Condition] | None = getattr(cls, "__conditionals__", None)
         if conditionals:
@@ -186,8 +198,6 @@ class CustomBaseModel(pdt.BaseModel):
             ui_schema["ui:options"] = cls.__with_ui__
 
         for field_name, model_field in cls.model_fields.items():
-            if not model_field.metadata:
-                continue
             ui_schema[field_name] = {}
             for meta in model_field.metadata:
                 # For full (flexible) ui schema support
@@ -204,23 +214,33 @@ class CustomBaseModel(pdt.BaseModel):
                         ui_schema[field_name]["ui:widget"] = meta.widget
                     if isinstance(meta, WithLabels):
                         ui_schema[field_name]["ui:enumNames"] = meta.labels
+            if not ui_schema[field_name]:
+                del ui_schema[field_name]
 
         return ui_schema
 
     @classmethod
-    def model_dependencies(cls) -> list[str]:
+    def model_requires(cls) -> dict | None:
+        if cls.__requires__:
+            return cls.__requires__.to_json()
+
+    @classmethod
+    def model_dependencies(cls) -> list[str] | None:
         return cls.__dependencies__
 
     @classmethod
     def model_full_schema(cls) -> dict:
-        schema = {
-            "schema": cls.model_json_schema(),
-        }
+        schema = {}
 
-        if ui_schema := cls.model_ui_schema():
-            schema["ui"] = ui_schema
+        if requires := cls.model_requires():
+            schema["requires"] = requires
 
         if dependencies := cls.model_dependencies():
             schema["dependencies"] = dependencies
+
+        schema["schema"] = cls.model_json_schema()
+
+        if ui_schema := cls.model_ui_schema():
+            schema["ui"] = ui_schema
 
         return schema
