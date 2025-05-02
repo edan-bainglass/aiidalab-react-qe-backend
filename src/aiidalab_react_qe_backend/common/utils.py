@@ -3,7 +3,8 @@ import pydantic as pdt
 
 
 class WithUI:
-    def __init__(self, **ui_props: t.Any):
+    def __init__(self, schema: dict | None = None, **ui_props: t.Any):
+        self.schema = schema
         self.ui_props = ui_props
 
 
@@ -15,6 +16,11 @@ class WithLabels:
 class WithWidget:
     def __init__(self, widget: str):
         self.widget = widget
+
+
+class WithItemFormat:
+    def __init__(self, format: str):
+        self.format = format
 
 
 class Patch:
@@ -30,19 +36,66 @@ class Patch:
         self._properties.setdefault(self.field, {})["default"] = default
         return self
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, dict]:
         return {"properties": self._properties}
 
 
-class Condition:
+class Schema:
     def __init__(
         self,
-        field: str,
+        *,
+        schema: dict | None = None,
+        properties: list[str] | None = None,
+        patches: list[Patch] | None = None,
+        conditions: list["Condition"] | None = None,
     ):
+        self.schema = schema
+        self.properties = properties or []
+        self.patches = patches or []
+        self.conditions = conditions or []
+
+        if self.schema is not None:
+            if any([self.properties, self.patches, self.conditions]):
+                raise ValueError(
+                    "If 'schema' is provided, no other options are allowed."
+                )
+
+    def to_dict(self) -> dict:
+        if self.schema:
+            return self.schema
+
+        result: dict[str, t.Any] = {}
+
+        if self.patches:
+            for patch in self.patches:
+                for field, props in patch.to_dict()["properties"].items():
+                    (
+                        result.setdefault("properties", {})
+                        .setdefault(field, {})
+                        .update(props)
+                    )
+
+        if self.properties:
+            for name in self.properties:
+                result.setdefault("properties", {})[name] = {
+                    "$ref": f"#/definitions/{name}"
+                }
+
+        if self.conditions:
+            if len(self.conditions) == 1:
+                result.update(self.conditions[0].to_json())
+            else:
+                result["allOf"] = [cond.to_json() for cond in self.conditions]
+
+        return result
+
+
+class Condition:
+    def __init__(self, field: str):
         self.field = field
         self._if: dict = {}
-        self._then: dict | list[Patch] | Condition | None = None
-        self._else: dict | list[Patch] | Condition | None = None
+        self._then: dict | None = None
+        self._else: dict | None = None
 
     def is_true(self) -> "Condition":
         self._if = {"properties": {self.field: {"const": True}}}
@@ -52,67 +105,26 @@ class Condition:
         self._if = {"properties": {self.field: {"const": False}}}
         return self
 
-    def is_equal(self, value: t.Any) -> "Condition":
+    def equals(self, value: t.Any) -> "Condition":
         self._if = {"properties": {self.field: {"const": value}}}
         return self
 
-    def then_(
-        self,
-        schema: dict | None = None,
-        properties: list[str] | None = None,
-        patches: list[Patch] | None = None,
-        condition: t.Optional["Condition"] = None,
-    ) -> "Condition":
-        self._then = schema or properties or patches or condition
-        assert self._then is not None, "missing 'then' condition"
+    def then_(self, **kwargs) -> "Condition":
+        schema = Schema(**kwargs)
+        self._then = schema.to_dict()
         return self
 
-    def else_(
-        self,
-        schema: dict | None = None,
-        properties: list[str] | None = None,
-        patches: list[Patch] | None = None,
-        condition: t.Optional["Condition"] = None,
-    ) -> "Condition":
-        self._else = schema or properties or patches or condition
-        assert self._else is not None, "missing 'else' condition"
+    def else_(self, **kwargs) -> "Condition":
+        schema = Schema(**kwargs)
+        self._else = schema.to_dict()
         return self
 
     def to_json(self) -> dict:
         return {
             "if": self._if,
-            "then": self._convert(self._then),
-            **(
-                {
-                    "else": self._convert(self._else),
-                }
-                if self._else
-                else {}
-            ),
+            "then": self._then,
+            **({"else": self._else} if self._else is not None else {}),
         }
-
-    def _convert(
-        self,
-        obj: dict | list[Patch] | t.Optional["Condition"],
-    ) -> dict | list[Patch] | t.Optional["Condition"]:
-        if isinstance(obj, list):
-            if all(isinstance(entry, Patch) for entry in obj):
-                return {
-                    "properties": {
-                        prop: value
-                        for entry in obj
-                        for prop, value in entry.to_dict()["properties"].items()
-                    }
-                }
-            elif all(isinstance(entry, str) for entry in obj):
-                return {
-                    "properties": {
-                        prop: {"$ref": f"#/definitions/{prop}"} for prop in obj
-                    }
-                }
-        if isinstance(obj, Condition):
-            return obj.to_json()
-        return obj
 
 
 def if_(field: str) -> Condition:
@@ -123,29 +135,35 @@ IsConditional = type("_IsConditional", (), {})()
 
 
 class CustomBaseModel(pdt.BaseModel):
-    __with_ui__: dict[str, t.Any] = {}  # schema-level UI options
+    __with_ui__: dict[str, t.Any] = {}
     __dependencies__: list[str] = []
 
     @classmethod
     def model_json_schema(cls, *args, **kwargs):
         schema = super().model_json_schema(*args, **kwargs)
         defs: dict[str, t.Any] = schema.setdefault("definitions", {})
-        properties: dict[str, t.Any] = schema.get("properties", {})
+        props: dict[str, t.Any] = schema.get("properties", {})
 
         conditional_fields = {
-            field_name
-            for field_name, field in cls.model_fields.items()
+            name
+            for name, field in cls.model_fields.items()
             if any(meta is IsConditional for meta in field.metadata)
         }
 
-        updated_fields = {}
-        for field_name, field_schema in properties.items():
-            defs[field_name] = field_schema
-            if field_name in conditional_fields:
-                continue
-            updated_fields[field_name] = {"$ref": f"#/definitions/{field_name}"}
+        updated_props = {}
+        for name, field_schema in props.items():
+            model_field = cls.model_fields[name]
 
-        schema["properties"] = updated_fields
+            for meta in model_field.metadata:
+                if isinstance(meta, WithItemFormat):
+                    field_schema.setdefault("items", {})["format"] = meta.format
+
+            defs[name] = field_schema
+
+            if name not in conditional_fields:
+                updated_props[name] = {"$ref": f"#/definitions/{name}"}
+
+        schema["properties"] = updated_props
 
         conditionals: list[Condition] | None = getattr(cls, "__conditionals__", None)
         if conditionals:
@@ -174,9 +192,12 @@ class CustomBaseModel(pdt.BaseModel):
             for meta in model_field.metadata:
                 # For full (flexible) ui schema support
                 if isinstance(meta, WithUI):
-                    ui_schema[field_name] = {
-                        f"ui:{key}": prop for key, prop in meta.ui_props.items()
-                    }
+                    if meta.schema:
+                        ui_schema[field_name].update(meta.schema)
+                    else:
+                        ui_schema[field_name] = {
+                            f"ui:{key}": prop for key, prop in meta.ui_props.items()
+                        }
                 # User-friendly API
                 else:
                     if isinstance(meta, WithWidget):
