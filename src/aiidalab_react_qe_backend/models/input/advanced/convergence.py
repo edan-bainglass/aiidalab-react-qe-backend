@@ -4,6 +4,7 @@ import pydantic as pdt
 
 from aiidalab_react_qe_backend.common.utils import (
     CustomBaseModel,
+    DependsOn,
     Patch,
     if_,
 )
@@ -17,24 +18,25 @@ class ConvergenceSettings(CustomBaseModel):
         pdt.Field(
             title="SCF energy (Ry/atom)",
         ),
+        DependsOn(["basic.protocol"]),
     ]
     ionicConvEng: t.Annotated[
         float,
         pdt.Field(
             title="Ionic energy (Ry/atom)",
         ),
+        DependsOn(["basic.protocol"]),
     ]
     ionicConvForce: t.Annotated[
         float,
         pdt.Field(
             title="Ionic force (Ry/Bohr)",
         ),
+        DependsOn(["basic.protocol"]),
     ]
 
-    __dependencies__ = ["basic.protocol"]
-
     __conditionals__ = [
-        if_("protocol")
+        if_("basic.protocol")
         .equals("fast")
         .then_(
             patches=[
@@ -45,7 +47,7 @@ class ConvergenceSettings(CustomBaseModel):
         )
         .else_(
             conditions=[
-                if_("protocol")
+                if_("basic.protocol")
                 .equals("balanced")
                 .then_(
                     patches=[

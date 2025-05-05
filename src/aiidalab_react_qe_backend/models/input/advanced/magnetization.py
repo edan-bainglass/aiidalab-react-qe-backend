@@ -4,6 +4,7 @@ import pydantic as pdt
 
 from aiidalab_react_qe_backend.common.utils import (
     CustomBaseModel,
+    DependsOn,
     IsConditional,
     WithItems,
     WithLabels,
@@ -32,6 +33,7 @@ class MagnetizationSettings(CustomBaseModel):
                 "Total magnetization",
             ]
         ),
+        DependsOn(["basic.electronic_type"]),
         IsConditional,
     ] = "moments"
     tot_magnetization: t.Annotated[
@@ -41,6 +43,7 @@ class MagnetizationSettings(CustomBaseModel):
             ge=0.0,
             multiple_of=0.1,
         ),
+        DependsOn(["basic.electronic_type"]),
         IsConditional,
     ] = 1
     moments: t.Annotated[
@@ -58,15 +61,14 @@ class MagnetizationSettings(CustomBaseModel):
             }
         ),
         WithItems(default=0.1),
+        DependsOn(["basic.electronic_type"]),
         IsConditional,
     ]
 
     __requires__ = requires("basic.magnetism").is_true()
 
-    __dependencies__ = ["basic.electronic_type"]
-
     __conditionals__ = [
-        if_("electronic_type")
+        if_("basic.electronic_type")
         .equals("insulator")
         .then_(
             properties=[

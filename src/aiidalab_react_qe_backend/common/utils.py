@@ -23,6 +23,11 @@ class WithItems:
         self.item_schema = item_schema
 
 
+class DependsOn:
+    def __init__(self, dependencies: list[str]):
+        self.dependencies = dependencies
+
+
 class DynamicFieldFragment:
     def __init__(
         self,
@@ -112,17 +117,15 @@ class Condition:
         self._then: dict | None = None
         self._else: dict | None = None
 
-    def is_true(self) -> "Condition":
-        self._if = {"properties": {self.field: {"const": True}}}
-        return self
-
-    def is_false(self) -> "Condition":
-        self._if = {"properties": {self.field: {"const": False}}}
-        return self
-
     def equals(self, value: t.Any) -> "Condition":
         self._if = {"properties": {self.field: {"const": value}}}
         return self
+
+    def is_true(self) -> "Condition":
+        return self.equals(True)
+
+    def is_false(self) -> "Condition":
+        return self.equals(False)
 
     def then_(self, **kwargs) -> "Condition":
         schema = Schema(**kwargs)
@@ -158,7 +161,6 @@ IsConditional = type("_IsConditional", (), {})()
 class CustomBaseModel(pdt.BaseModel):
     __with_ui__: dict[str, t.Any] | None = None
     __requires__: Condition | None = None
-    __dependencies__: list[str] | None = None
     __conditionals__: list[Condition] | None = None
 
     @classmethod
@@ -239,8 +241,15 @@ class CustomBaseModel(pdt.BaseModel):
             return cls.__requires__.to_json()
 
     @classmethod
-    def model_dependencies(cls) -> list[str] | None:
-        return cls.__dependencies__
+    def model_dependencies(cls) -> dict[str, list[str]]:
+        deps: dict[str, list[str]] = {}
+
+        for field_name, model_field in cls.model_fields.items():
+            for meta in model_field.metadata:
+                if isinstance(meta, DependsOn):
+                    deps[field_name] = meta.dependencies
+
+        return deps
 
     @classmethod
     def model_dynamic(cls) -> dict[str, list[dict]] | None:
@@ -265,8 +274,7 @@ class CustomBaseModel(pdt.BaseModel):
         if requires := cls.model_requires():
             schema["requires"] = requires
 
-        if dependencies := cls.model_dependencies():
-            schema["dependencies"] = dependencies
+        schema["dependencies"] = cls.model_dependencies()
 
         schema["schema"] = cls.model_json_schema()
 

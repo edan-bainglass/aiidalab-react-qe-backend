@@ -4,6 +4,7 @@ import pydantic as pdt
 
 from aiidalab_react_qe_backend.common.utils import (
     CustomBaseModel,
+    DependsOn,
     Patch,
     WithLabels,
     WithWidget,
@@ -25,6 +26,7 @@ class BasicSettings(CustomBaseModel):
                 "Full geometry",
             ],
         ),
+        DependsOn(["structure.pbc"]),
     ] = None
     electronic_type: t.Annotated[
         t.Literal[
@@ -65,11 +67,9 @@ class BasicSettings(CustomBaseModel):
         pdt.Field(title="Spin-orbit coupling"),
     ] = False
 
-    __dependencies__ = ["structure.pbc"]
-
     __conditionals__ = [
-        if_("molecule")
-        .is_true()
+        if_("structure.pbc")
+        .equals([False, False, False])
         .then_(
             patches=[
                 Patch("relax")

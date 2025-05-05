@@ -4,6 +4,7 @@ import pydantic as pdt
 
 from aiidalab_react_qe_backend.common.utils import (
     CustomBaseModel,
+    DependsOn,
     DynamicFieldFragment,
     Patch,
     WithItems,
@@ -45,6 +46,7 @@ class PseudopotentialSettings(CustomBaseModel):
                 "SSSP",
             ]
         ),
+        DependsOn(["basic.spin_orbit"]),
     ] = None
     accuracy: t.Annotated[
         t.Optional[str],
@@ -78,10 +80,8 @@ class PseudopotentialSettings(CustomBaseModel):
         ),
     ]
 
-    __dependencies__ = ["basic.spin_orbit"]
-
     __conditionals__ = [
-        if_("spin_orbit")
+        if_("basic.spin_orbit")
         .is_false()
         .then_(
             patches=[
