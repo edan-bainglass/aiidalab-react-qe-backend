@@ -23,6 +23,20 @@ class WithItems:
         self.item_schema = item_schema
 
 
+class DynamicFieldFragment:
+    def __init__(
+        self,
+        endpoint: str,
+        requires: list[str],
+        target: t.Literal["schema", "ui", "both"] = "schema",
+        path: str = "",  # optional subpath, e.g. "enum" or "items.default"
+    ):
+        self.endpoint = endpoint
+        self.requires = requires
+        self.target = target
+        self.path = path
+
+
 class Patch:
     def __init__(self, field: str):
         self.field = field
@@ -229,6 +243,22 @@ class CustomBaseModel(pdt.BaseModel):
         return cls.__dependencies__
 
     @classmethod
+    def model_dynamic(cls) -> dict[str, list[dict]] | None:
+        dynamic = {}
+        for name, field in cls.model_fields.items():
+            for meta in field.metadata:
+                if isinstance(meta, DynamicFieldFragment):
+                    dynamic.setdefault(name, []).append(
+                        {
+                            "endpoint": meta.endpoint,
+                            "requires": meta.requires,
+                            "target": meta.target,
+                            "path": meta.path,
+                        }
+                    )
+        return dynamic or None
+
+    @classmethod
     def model_full_schema(cls) -> dict:
         schema = {}
 
@@ -242,5 +272,8 @@ class CustomBaseModel(pdt.BaseModel):
 
         if ui_schema := cls.model_ui_schema():
             schema["ui"] = ui_schema
+
+        if dynamic := cls.model_dynamic():
+            schema["dynamic"] = dynamic
 
         return schema

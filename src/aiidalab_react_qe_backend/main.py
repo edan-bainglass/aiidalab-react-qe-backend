@@ -1,9 +1,11 @@
 import json
+import typing as t
+
+import pydantic as pdt
+from fastapi import FastAPI, HTTPException
 
 from aiidalab_react_qe_backend.models.input.advanced import ADVANCED_SETTINGS
 from aiidalab_react_qe_backend.models.input.basic import BasicSettings
-from fastapi import FastAPI, HTTPException
-
 from aiidalab_react_qe_backend.registry import discover_plugins
 
 app = FastAPI()
@@ -49,3 +51,19 @@ def get_plugin_schema(plugin_id: str, schema_key: str):
 def submit_workflow(payload: dict):
     print(json.dumps(payload, indent=2))
     return {"status": "success", "data": payload}
+
+
+class AccuracyInput(pdt.BaseModel):
+    family: t.Literal["SSSP", "PseudoDojo"]
+
+
+@app.post("/api/core/schema/dynamic/accuracy/labels")
+async def get_accuracy_labels(data: AccuracyInput):
+    if data.family == "SSSP":
+        labels = ["Efficiency", "Precision"]
+    elif data.family == "PseudoDojo":
+        labels = ["Standard", "Stringent"]
+    else:
+        labels = []
+    print(json.dumps(labels, indent=2))
+    return labels

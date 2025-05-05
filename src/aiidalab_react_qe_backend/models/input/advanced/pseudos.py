@@ -4,6 +4,7 @@ import pydantic as pdt
 
 from aiidalab_react_qe_backend.common.utils import (
     CustomBaseModel,
+    DynamicFieldFragment,
     Patch,
     WithItems,
     WithLabels,
@@ -51,6 +52,12 @@ class PseudopotentialSettings(CustomBaseModel):
             title="Accuracy",
         ),
         WithWidget("toggleGroup"),
+        DynamicFieldFragment(
+            endpoint="/api/core/schema/dynamic/accuracy/labels",
+            requires=["family"],
+            target="ui",
+            path="ui:enumNames",
+        ),
     ] = None
     pseudopotentials: t.Annotated[
         list[str],
