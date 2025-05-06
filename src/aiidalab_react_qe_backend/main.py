@@ -53,17 +53,16 @@ def submit_workflow(payload: dict):
     return {"status": "success", "data": payload}
 
 
-class AccuracyInput(pdt.BaseModel):
-    family: t.Literal["SSSP", "PseudoDojo"]
-
-
 @app.post("/api/core/schema/dynamic/accuracy/labels")
-async def get_accuracy_labels(data: AccuracyInput):
-    if data.family == "SSSP":
-        labels = ["Efficiency", "Precision"]
-    elif data.family == "PseudoDojo":
-        labels = ["Standard", "Stringent"]
-    else:
-        labels = []
+async def get_accuracy_labels(data):
+    if not data or "family" not in data:
+        raise HTTPException(status_code=422, detail="Missing 'family' in request data")
+    labels = (
+        ["Efficiency", "Precision"]
+        if data["family"] == "SSSP"
+        else ["Standard", "Stringent"]
+        if data["family"] == "PseudoDojo"
+        else []
+    )
     print(json.dumps(labels, indent=2))
     return labels
