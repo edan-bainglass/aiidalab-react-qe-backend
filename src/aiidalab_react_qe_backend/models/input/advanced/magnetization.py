@@ -61,7 +61,12 @@ class MagnetizationSettings(CustomBaseModel):
             }
         ),
         WithItems(default=0.1),
-        DependsOn(["basic.electronic_type"]),
+        DependsOn(
+            [
+                "structure.species",
+                "basic.electronic_type",
+            ]
+        ),
         IsConditional,
     ]
 

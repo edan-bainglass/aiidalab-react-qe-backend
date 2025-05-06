@@ -78,6 +78,7 @@ class PseudopotentialSettings(CustomBaseModel):
                 },
             }
         ),
+        DependsOn(["structure.species"]),
     ]
 
     __conditionals__ = [
