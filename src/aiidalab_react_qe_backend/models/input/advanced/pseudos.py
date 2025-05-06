@@ -56,7 +56,7 @@ class PseudopotentialSettings(CustomBaseModel):
         WithWidget("toggleGroup"),
         DynamicFieldFragment(
             endpoint="/api/core/schema/dynamic/accuracy/labels",
-            requires=["family"],
+            requires=["pseudos.family"],
             target="ui",
             path="ui:enumNames",
         ),

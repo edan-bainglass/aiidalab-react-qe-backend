@@ -53,15 +53,18 @@ def submit_workflow(payload: dict):
     return {"status": "success", "data": payload}
 
 
+class AccuracyInput(pdt.BaseModel):
+    pseudos_family: t.Literal["SSSP", "PseudoDojo"]
+
+
+# TODO consider generalizing this endpoint (maybe providing labels in the model?)
 @app.post("/api/core/schema/dynamic/accuracy/labels")
-async def get_accuracy_labels(data):
-    if not data or "family" not in data:
-        raise HTTPException(status_code=422, detail="Missing 'family' in request data")
+async def get_accuracy_labels(data: AccuracyInput):
     labels = (
         ["Efficiency", "Precision"]
-        if data["family"] == "SSSP"
+        if data.pseudos_family == "SSSP"
         else ["Standard", "Stringent"]
-        if data["family"] == "PseudoDojo"
+        if data.pseudos_family == "PseudoDojo"
         else []
     )
     print(json.dumps(labels, indent=2))
