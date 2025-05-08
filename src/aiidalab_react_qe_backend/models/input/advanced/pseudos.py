@@ -3,9 +3,10 @@ import typing as t
 import pydantic as pdt
 
 from aiidalab_react_qe_backend.common.utils import (
+    BackendPatch,
     CustomBaseModel,
     WithDependency,
-    DynamicFieldFragment,
+    WithBackendPatches,
     Patch,
     WithItems,
     WithLabels,
@@ -57,6 +58,17 @@ class PseudopotentialSettings(CustomBaseModel):
         ),
         WithWidget("toggleGroup"),
         WithDependency(["basic.protocol"]),
+        WithBackendPatches(
+            ui=BackendPatch(
+                what="labels",
+                requires=["pseudos.family"],
+                processor=lambda params: ["Efficiency", "Precision"]
+                if params["pseudos.family"] == "SSSP"
+                else ["Standard", "Stringent"]
+                if params["pseudos.family"] == "PseudoDojo"
+                else [],
+            )
+        ),
     ]
 
     pseudopotentials: t.Annotated[

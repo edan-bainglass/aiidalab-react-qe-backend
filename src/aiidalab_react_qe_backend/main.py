@@ -1,7 +1,7 @@
 import json
-import typing as t
 
-import pydantic as pdt
+from aiidalab_react_qe_backend.common.payload_types import PatchRequestPayload
+from aiidalab_react_qe_backend.common.patching import SchemaPatcher
 from fastapi import FastAPI, HTTPException
 
 from aiidalab_react_qe_backend.models.input.advanced import ADVANCED_SETTINGS
@@ -53,19 +53,9 @@ def submit_workflow(payload: dict):
     return {"status": "success", "data": payload}
 
 
-class AccuracyInput(pdt.BaseModel):
-    pseudos_family: t.Literal["SSSP", "PseudoDojo"]
-
-
-# TODO consider generalizing this endpoint (maybe providing labels in the model?)
-@app.post("/api/core/schema/dynamic/accuracy/labels")
-async def get_accuracy_labels(data: AccuracyInput):
-    labels = (
-        ["Efficiency", "Precision"]
-        if data.pseudos_family == "SSSP"
-        else ["Standard", "Stringent"]
-        if data.pseudos_family == "PseudoDojo"
-        else []
-    )
-    print(json.dumps(labels, indent=2))
-    return labels
+@app.post("/api/core/schema/patches/{panel}/{field}/{part}")
+async def get_patch(panel: str, field: str, part: str, payload: PatchRequestPayload):
+    if not (patch := SchemaPatcher.generate_patch(panel, field, part, payload)):
+        raise HTTPException(status_code=404, detail="Patch not found")
+    print(json.dumps(patch, indent=2))
+    return patch

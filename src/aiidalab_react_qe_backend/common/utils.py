@@ -1,4 +1,5 @@
 import typing as t
+
 import pydantic as pdt
 
 
@@ -23,23 +24,31 @@ class WithItems:
         self.item_schema = item_schema
 
 
-class DependsOn:
+class WithDependency:
     def __init__(self, dependencies: list[str]):
         self.dependencies = dependencies
 
 
-class DynamicFieldFragment:
+class BackendPatch:
     def __init__(
         self,
-        endpoint: str,
+        what: str,
         requires: list[str],
-        target: t.Literal["schema", "ui", "both"] = "schema",
-        path: str = "",  # optional subpath, e.g. "enum" or "items.default"
+        processor: t.Callable,
     ):
-        self.endpoint = endpoint
+        self.what = "ui:enumNames" if what == "labels" else what
         self.requires = requires
-        self.target = target
-        self.path = path
+        self.processor = processor
+
+
+class WithBackendPatches:
+    def __init__(
+        self,
+        ui: BackendPatch | None = None,
+        definition: BackendPatch | None = None,
+    ):
+        self.ui = ui
+        self.definition = definition
 
 
 class Patch:
@@ -244,26 +253,27 @@ class CustomBaseModel(pdt.BaseModel):
 
         for field_name, model_field in cls.model_fields.items():
             for meta in model_field.metadata:
-                if isinstance(meta, DependsOn):
+                if isinstance(meta, WithDependency):
                     deps[field_name] = meta.dependencies
 
         return deps
 
     @classmethod
-    def model_dynamic(cls) -> dict[str, list[dict]] | None:
-        dynamic = {}
+    def model_patches(cls) -> dict[str, list[dict]] | None:
+        patches = {}
         for name, field in cls.model_fields.items():
             for meta in field.metadata:
-                if isinstance(meta, DynamicFieldFragment):
-                    dynamic.setdefault(name, []).append(
-                        {
-                            "endpoint": meta.endpoint,
-                            "requires": meta.requires,
-                            "target": meta.target,
-                            "path": meta.path,
+                if isinstance(meta, WithBackendPatches):
+                    patches.setdefault(name, {})
+                    if meta.definition:
+                        patches[name]["definition"] = {
+                            "requires": meta.definition.requires,
                         }
-                    )
-        return dynamic or None
+                    if meta.ui:
+                        patches[name]["ui"] = {
+                            "requires": meta.ui.requires,
+                        }
+        return patches
 
     @classmethod
     def model_full_schema(cls) -> dict:
@@ -272,15 +282,28 @@ class CustomBaseModel(pdt.BaseModel):
         if requires := cls.model_requires():
             schema["requires"] = requires
 
-        if dependencies := cls.model_dependencies():
-            schema["dependencies"] = dependencies
-
-        if dynamic := cls.model_dynamic():
-            schema["dynamic"] = dynamic
-
         schema["schema"] = cls.model_json_schema()
 
         if ui_schema := cls.model_ui_schema():
             schema["ui"] = ui_schema
 
+        if dependencies := cls.model_dependencies():
+            schema["dependencies"] = dependencies
+
+        if patches := cls.model_patches():
+            schema["patches"] = patches
+
         return schema
+
+    @classmethod
+    def get_backend_patches(cls, field: str) -> WithBackendPatches | None:
+        if not (model_field := cls.model_fields.get(field, None)):
+            return None
+        return next(
+            (
+                meta
+                for meta in model_field.metadata
+                if isinstance(meta, WithBackendPatches)
+            ),
+            None,
+        )
