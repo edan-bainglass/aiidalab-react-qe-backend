@@ -109,6 +109,7 @@ class Schema:
         return result
 
 
+# TODO else must only extend then, not if - rethink!
 class Condition:
     def __init__(self, field: str, condition_only: bool = False):
         self.field = field
@@ -165,6 +166,7 @@ class CustomBaseModel(pdt.BaseModel):
 
     @classmethod
     def model_json_schema(cls, *args, **kwargs):
+        # TODO consider reordering the schema to be more readable
         schema = super().model_json_schema(*args, **kwargs)
         defs: dict[str, t.Any] = schema.setdefault("definitions", {})
         props: dict[str, t.Any] = schema.get("properties", {})
@@ -204,11 +206,7 @@ class CustomBaseModel(pdt.BaseModel):
 
     @classmethod
     def model_ui_schema(cls) -> dict:
-        ui_schema = {
-            "ui:submitButtonOptions": {
-                "norender": True,
-            }
-        }
+        ui_schema = {}
 
         if cls.__with_ui__:
             ui_schema["ui:options"] = cls.__with_ui__
@@ -274,14 +272,15 @@ class CustomBaseModel(pdt.BaseModel):
         if requires := cls.model_requires():
             schema["requires"] = requires
 
-        schema["dependencies"] = cls.model_dependencies()
+        if dependencies := cls.model_dependencies():
+            schema["dependencies"] = dependencies
+
+        if dynamic := cls.model_dynamic():
+            schema["dynamic"] = dynamic
 
         schema["schema"] = cls.model_json_schema()
 
         if ui_schema := cls.model_ui_schema():
             schema["ui"] = ui_schema
-
-        if dynamic := cls.model_dynamic():
-            schema["dynamic"] = dynamic
 
         return schema

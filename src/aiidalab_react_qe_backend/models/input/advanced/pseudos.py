@@ -35,7 +35,7 @@ class PseudopotentialSettings(CustomBaseModel):
         ),
     ] = "pbe_sol"
     family: t.Annotated[
-        t.Optional[str],
+        str,
         pdt.Field(
             title="Family",
         ),
@@ -47,9 +47,9 @@ class PseudopotentialSettings(CustomBaseModel):
             ]
         ),
         DependsOn(["basic.spin_orbit"]),
-    ] = None
+    ]
     accuracy: t.Annotated[
-        t.Optional[str],
+        str,
         pdt.Field(
             title="Accuracy",
         ),
@@ -60,7 +60,8 @@ class PseudopotentialSettings(CustomBaseModel):
             target="ui",
             path="ui:enumNames",
         ),
-    ] = None
+        DependsOn(["basic.protocol"]),
+    ]
     pseudopotentials: t.Annotated[
         list[str],
         pdt.Field(
@@ -83,36 +84,55 @@ class PseudopotentialSettings(CustomBaseModel):
 
     __conditionals__ = [
         if_("basic.spin_orbit")
-        .is_false()
+        .is_true()
         .then_(
             patches=[
+                Patch("family").set_options(["PseudoDojo"]).set_default("PseudoDojo")
+            ],
+        )
+        .else_(
+            patches=[
                 Patch("family").set_options(["PseudoDojo", "SSSP"]).set_default("SSSP")
+            ]
+        ),
+        if_("family")
+        .equals("SSSP")
+        .then_(
+            patches=[
+                Patch("accuracy").set_options(["efficiency", "precision"]),
             ],
             conditions=[
-                if_("family")
-                .equals("SSSP")
+                if_("basic.protocol")
+                .equals("stringent")
                 .then_(
                     patches=[
-                        Patch("accuracy")
-                        .set_options(["efficiency", "precision"])
-                        .set_default("efficiency")
-                    ]
+                        Patch("accuracy").set_default("precision"),
+                    ],
                 )
                 .else_(
                     patches=[
-                        Patch("accuracy")
-                        .set_options(["standard", "stringent"])
-                        .set_default("standard")
-                    ]
+                        Patch("accuracy").set_default("efficiency"),
+                    ],
                 )
             ],
         )
         .else_(
             patches=[
-                Patch("family").set_options(["PseudoDojo"]).set_default("PseudoDojo"),
-                Patch("accuracy")
-                .set_options(["standard", "stringent"])
-                .set_default("standard"),
-            ]
-        )
+                Patch("accuracy").set_options(["standard", "stringent"]),
+            ],
+            conditions=[
+                if_("basic.protocol")
+                .equals("stringent")
+                .then_(
+                    patches=[
+                        Patch("accuracy").set_default("stringent"),
+                    ],
+                )
+                .else_(
+                    patches=[
+                        Patch("accuracy").set_default("standard"),
+                    ],
+                )
+            ],
+        ),
     ]
