@@ -4,7 +4,7 @@ import pydantic as pdt
 
 from aiidalab_react_qe_backend.common.utils import (
     CustomBaseModel,
-    DependsOn,
+    WithDependency,
     Patch,
     WithLabels,
     WithWidget,
@@ -26,8 +26,9 @@ class BasicSettings(CustomBaseModel):
                 "Full geometry",
             ],
         ),
-        DependsOn(["structure.pbc"]),
+        WithDependency(["structure.pbc"]),
     ] = None
+
     electronic_type: t.Annotated[
         t.Literal[
             "metallic",
@@ -42,6 +43,7 @@ class BasicSettings(CustomBaseModel):
             ],
         ),
     ] = "metallic"
+
     protocol: t.Annotated[
         t.Literal[
             "fast",
@@ -58,10 +60,12 @@ class BasicSettings(CustomBaseModel):
             ],
         ),
     ] = "fast"
+
     magnetism: t.Annotated[
         bool,
         pdt.Field(title="Magnetism"),
     ] = False
+
     spin_orbit: t.Annotated[
         bool,
         pdt.Field(title="Spin-orbit coupling"),

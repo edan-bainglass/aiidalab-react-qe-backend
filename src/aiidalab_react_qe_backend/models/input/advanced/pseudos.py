@@ -4,7 +4,7 @@ import pydantic as pdt
 
 from aiidalab_react_qe_backend.common.utils import (
     CustomBaseModel,
-    DependsOn,
+    WithDependency,
     DynamicFieldFragment,
     Patch,
     WithItems,
@@ -34,6 +34,7 @@ class PseudopotentialSettings(CustomBaseModel):
             ]
         ),
     ] = "pbe_sol"
+
     family: t.Annotated[
         str,
         pdt.Field(
@@ -46,22 +47,18 @@ class PseudopotentialSettings(CustomBaseModel):
                 "SSSP",
             ]
         ),
-        DependsOn(["basic.spin_orbit"]),
+        WithDependency(["basic.spin_orbit"]),
     ]
+
     accuracy: t.Annotated[
         str,
         pdt.Field(
             title="Accuracy",
         ),
         WithWidget("toggleGroup"),
-        DynamicFieldFragment(
-            endpoint="/api/core/schema/dynamic/accuracy/labels",
-            requires=["pseudos.family"],
-            target="ui",
-            path="ui:enumNames",
-        ),
-        DependsOn(["basic.protocol"]),
+        WithDependency(["basic.protocol"]),
     ]
+
     pseudopotentials: t.Annotated[
         list[str],
         pdt.Field(
@@ -79,7 +76,7 @@ class PseudopotentialSettings(CustomBaseModel):
                 },
             }
         ),
-        DependsOn(["structure.species"]),
+        WithDependency(["structure.species"]),
     ]
 
     __conditionals__ = [

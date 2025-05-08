@@ -14,6 +14,7 @@ class HubbardUSettings(CustomBaseModel):
             title="Enable U",
         ),
     ] = False
+
     U: t.Annotated[
         float,
         pdt.Field(
